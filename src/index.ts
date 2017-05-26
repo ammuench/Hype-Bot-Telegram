@@ -4,7 +4,7 @@ const token = "362547656:AAGAl4o2TvPiXEg1HN4XN5C-zf10xdeuRNk";
 // const TelegramBot = new tbotapi(token, {polling: true});
 
 import TelegramBot = require("node-telegram-bot-api");
-import { HypeResponses } from "./hype-responses";
+import { HypeResponses } from "./bot-modules/hype-responses/hype-responses";
 
 const MyTelegramBot = new TelegramBot(token, { polling: true });
 
