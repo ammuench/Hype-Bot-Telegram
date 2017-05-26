@@ -15,6 +15,6 @@ const hypeReplies: string[] = [
 ];
 export class HYPE {
     public hypeReply(): string {
-        return hypeReplies[Math.floor(Math.random()*hypeReplies.length)];
+        return hypeReplies[Math.floor(Math.random() * hypeReplies.length)];
     }
 }

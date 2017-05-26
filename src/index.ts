@@ -8,7 +8,6 @@ import { HYPE } from "./hype";
 
 const MyTelegramBot = new TelegramBot(token, { polling: true });
 
-
 MyTelegramBot.onText(/hype/i, (msg: any, match: any): void => {
   const hype = new HYPE();
   MyTelegramBot.sendMessage(msg.chat.id, hype.hypeReply());
