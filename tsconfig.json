@@ -7,6 +7,7 @@
     "outDir": "./lib",
     "preserveConstEnums": true,
     "removeComments": true,
+    "target": "es2016",
     "typeRoots": [
       "./node_modules/@types"
     ]
