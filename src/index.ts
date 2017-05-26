@@ -4,14 +4,11 @@ const token = "362547656:AAGAl4o2TvPiXEg1HN4XN5C-zf10xdeuRNk";
 // const TelegramBot = new tbotapi(token, {polling: true});
 
 import TelegramBot = require("node-telegram-bot-api");
-import { HYPE } from "./hype";
+import { HypeResponses } from "./hype-responses";
 
 const MyTelegramBot = new TelegramBot(token, { polling: true });
 
-MyTelegramBot.onText(/hype/i, (msg: any, match: any): void => {
-  const hype = new HYPE();
-  MyTelegramBot.sendMessage(msg.chat.id, hype.hypeReply());
-});
+new HypeResponses(MyTelegramBot);
 
 // Test Echo Commands
 MyTelegramBot.onText(/\/echo (.+)/, (msg: any, match: any): void => {
