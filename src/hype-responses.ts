@@ -13,24 +13,38 @@ const hypeReplies: string[] = [
   "HYPE HYPE HYPE HYPE HYPE",
   "TURN UP THE HYPE",
   "ALL THAT REMAINS IS HYPE",
-  "I AM THE HYPE"
+  "I AM THE HYPE",
+  "HYPE",
+  "HYPE HYPE HYPE HYPE HYPE HYPE HYPE HYPE HYPE HYPE HYPE HYPE",
+  "HYPE HYPE HYPE",
+  "GOTTA CHECK MY HYPE WATCH, ITS HYPE TIME",
+  "HYPE TRAIN ACTIVATED",
+  "HYYYYYYYYPPPPPPPPEEEEEE",
+  "GET HYPE",
+  "SO MUCH HYPE",
+  "HYYYYYYYYYYPE",
+  "hypehypehypehypehypehype",
+  "HYYYYYYPE",
+  "HYPE HYPE",
+  "HYPE",
+  "hype."
 ];
 
 export class HypeResponses {
-    private HBot: TelegramBot;
+  private HBot: TelegramBot;
 
-    constructor(botReference: TelegramBot) {
-      this.HBot = botReference;
-      this.setBasicHypeResponses();
-    }
+  constructor(botReference: TelegramBot) {
+    this.HBot = botReference;
+    this.setBasicHypeResponses();
+  }
 
-    private setBasicHypeResponses(): void {
-      this.HBot.onText(/h+y+p+e+/i, (msg: any, match: any): void => {
-        this.HBot.sendMessage(msg.chat.id, this.hypeReply());
-      });
-    }
+  private setBasicHypeResponses(): void {
+    this.HBot.onText(/h+y+p+e+/i, (msg: any, match: any): void => {
+      this.HBot.sendMessage(msg.chat.id, this.hypeReply());
+    });
+  }
 
-    private hypeReply(): string {
-        return hypeReplies[Math.floor(Math.random() * hypeReplies.length)];
-    }
+  private hypeReply(): string {
+    return hypeReplies[Math.floor(Math.random() * hypeReplies.length)];
+  }
 }
