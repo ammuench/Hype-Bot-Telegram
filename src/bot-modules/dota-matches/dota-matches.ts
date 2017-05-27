@@ -26,7 +26,7 @@ export class DotaMatches {
           let messageText: string = "<b>Live Dota 2 Streams</b>\n==============================\n";
           for (let i: number = 0; i < 5; i++) {
             messageText += "<i>" + streams[i].channel.status + "</i>\n";
-            messageText += "    - <a href=\"" + streams[i].channel.url + "\">Watch Live Stream</a>\n";
+            messageText += "    - <a href=\"" + streams[i].channel.url + "\">Watch @" + streams[i].channel.name + "\'s Stream</a>\n";
           }
           this.MyTelegramBot.sendMessage(msg.chat.id, messageText, { parse_mode: "HTML", disable_web_page_preview: true });
         },
