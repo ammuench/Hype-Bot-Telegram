@@ -6,38 +6,66 @@ export class DotaMatches {
 
   constructor(botReference: TelegramBot) {
     this.MyTelegramBot = botReference;
-    this.setBasicHypeResponses();
+    this.setDotaCommandParser();
   }
 
-  private setBasicHypeResponses(): void {
-    this.MyTelegramBot.onText(/\/dotalive/i, (msg: any, match: any): void => {
-      this.MyTelegramBot.sendMessage(msg.chat.id, "Fetching Live Dota 2 matches...!");
-      this.liveGames()
-        .then((matchString: string) => {
-          this.MyTelegramBot.sendMessage(msg.chat.id, matchString, { parse_mode: "HTML", disable_web_page_preview: true });
-        });
+  private setDotaCommandParser(): void {
+    this.MyTelegramBot.onText(/\/dota/i, (msg: any, match: any): void => {
+      const commandArray: string[] = msg.text.split(" ");
+      if (commandArray.length === 1) {
+        // TODO - Possibly integrate with native help commands?
+        this.showDotaMatches(msg);
+        this.showDotaStreams(msg);
+      } else {
+        switch (commandArray[1]) {
+          case "matches":
+            this.showDotaMatches(msg);
+            break;
+          case "streams":
+            this.showDotaStreams(msg);
+            break;
+          default:
+            this.showCommandError(msg, commandArray[1]);
+            break;
+        }
+      }
     });
+  }
 
-    this.MyTelegramBot.onText(/\/dotastrim/i, (msg: any, match: any): void => {
-      this.MyTelegramBot.sendMessage(msg.chat.id, "Fetching Live Dota 2 streams...!");
-      this.getDotaLiveStreams()
-        .then(
+  private showCommandError(msg: any, command: string): void {
+    this.MyTelegramBot.sendMessage(msg.chat.id, "I'm sorry, I can't yet process the \"" + command + "\" command for /dota.");
+  }
+
+  private showDotaMatches(msg: any): void {
+    this.MyTelegramBot.sendMessage(msg.chat.id, "Fetching Live Dota 2 matches...!");
+    this.getLiveMatchData()
+      .then((matchString: string) => {
+        this.MyTelegramBot.sendMessage(msg.chat.id, matchString, { parse_mode: "HTML", disable_web_page_preview: true });
+      });
+  }
+
+  private showDotaStreams(msg: any): void {
+    this.MyTelegramBot.sendMessage(msg.chat.id, "Fetching Live Dota 2 streams...!");
+    this.getDotaLiveStreams()
+      .then(
         (streams: any[]) => {
           let messageText: string = "<b>Live Dota 2 Streams</b>\n==============================\n";
+
           for (let i: number = 0; i < 5; i++) {
             messageText += "<i>" + streams[i].channel.status + "</i>\n";
-            messageText += "    - <a href=\"" + streams[i].channel.url + "\">Watch @" + streams[i].channel.name + "\'s Stream</a>\n";
+            messageText += "    - <a href=\"" + streams[i].channel.url + "\">Watch @" + streams[i].channel.name + "</a>\n";
           }
+
           this.MyTelegramBot.sendMessage(msg.chat.id, messageText, { parse_mode: "HTML", disable_web_page_preview: true });
         },
         (error: any) => {
           this.MyTelegramBot.sendMessage(msg.chat.id, error, { parse_mode: "HTML", disable_web_page_preview: true });
         }
-        );
-    });
+      );
+
   }
 
-  private liveGames(): Promise<string> {
+  private getLiveMatchData(): Promise<string> {
     return new Promise((resolve: any, reject: any) => {
       try {
         GosuAPI.fetchMatchUrls("dota2", null, (fetchError, urls) => {
@@ -69,7 +97,7 @@ export class DotaMatches {
       const request = require("request");
       request.get(twitchURL, (error: any, response: any, body: any) => {
         if (response) {
-          resolve(JSON.parse(response.body).streams);
+          resolve(JSON.parse(response.body).streams.filter((stream: any) => stream.channel.broadcaster_language === "en"));
         } else if (error) {
           reject(error);
         } else {
