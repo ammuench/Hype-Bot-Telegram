@@ -10,7 +10,7 @@ export class DotaMatches {
   }
 
   private setDotaCommandParser(): void {
-    this.MyTelegramBot.onText(/\/dota/i, (msg: any, match: any): void => {
+    this.MyTelegramBot.onText(/^\/dota/i, (msg: any, match: any): void => {
       const commandArray: string[] = msg.text.split(" ");
       if (commandArray.length === 1) {
         // TODO - Possibly integrate with native help commands?

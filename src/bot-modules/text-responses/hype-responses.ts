@@ -1,6 +1,4 @@
-import TelegramBot = require("node-telegram-bot-api");
-
-const hypeReplies: string[] = [
+export const hypeResponses: string[] = [
   "HYPE",
   "HYYYYYYPE",
   "LET ME CHECK MY WATCH... IT'S HYPE TIME",
@@ -29,22 +27,3 @@ const hypeReplies: string[] = [
   "HYPE",
   "hype."
 ];
-
-export class HypeResponses {
-  private HBot: TelegramBot;
-
-  constructor(botReference: TelegramBot) {
-    this.HBot = botReference;
-    this.setBasicHypeResponses();
-  }
-
-  private setBasicHypeResponses(): void {
-    this.HBot.onText(/h+y+p+e+/i, (msg: any, match: any): void => {
-      this.HBot.sendMessage(msg.chat.id, this.hypeReply());
-    });
-  }
-
-  private hypeReply(): string {
-    return hypeReplies[Math.floor(Math.random() * hypeReplies.length)];
-  }
-}

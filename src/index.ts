@@ -1,15 +1,14 @@
 // Core Bot Creation
-// const tbotapi = require('node-telegram-bot-api');
-const token = "362547656:AAGAl4o2TvPiXEg1HN4XN5C-zf10xdeuRNk";
-// const TelegramBot = new tbotapi(token, {polling: true});
-
 import TelegramBot = require("node-telegram-bot-api");
-import { HypeResponses } from "./bot-modules/hype-responses/hype-responses";
+import { TextResponses } from "./bot-modules/text-responses/text-responses";
+import { TextCommands } from "./bot-modules/text-commands/text-commands";
 import { DotaMatches } from "./bot-modules/dota-matches/dota-matches";
 
+const token = "362547656:AAGAl4o2TvPiXEg1HN4XN5C-zf10xdeuRNk";
 const MyTelegramBot = new TelegramBot(token, { polling: true });
 
-new HypeResponses(MyTelegramBot);
+new TextResponses(MyTelegramBot);
+new TextCommands(MyTelegramBot);
 new DotaMatches(MyTelegramBot);
 
 // Test Echo Commands

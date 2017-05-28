@@ -5,6 +5,7 @@
     "no-unused-expression": false,
     "max-line-length": false,
     "ordered-imports": false,
-    "no-console": false
+    "no-console": false,
+    "no-var-requires": false
   }
 }
