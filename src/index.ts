@@ -10,10 +10,3 @@ const MyTelegramBot = new TelegramBot(token, { polling: true });
 new TextResponses(MyTelegramBot);
 new TextCommands(MyTelegramBot);
 new DotaMatches(MyTelegramBot);
-
-// Test Echo Commands
-MyTelegramBot.onText(/\/echo (.+)/, (msg: any, match: any): void => {
-  const chatId = msg.chat.id;
-  const resp = match[1]; // the captured "whatever"
-  MyTelegramBot.sendMessage(chatId, resp);
-});
