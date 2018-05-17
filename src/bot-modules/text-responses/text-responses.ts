@@ -1,5 +1,5 @@
-import TelegramBot = require("node-telegram-bot-api");
-import { hypeResponses } from "./hype-responses";
+import TelegramBot = require('node-telegram-bot-api');
+import { hypeResponses } from './hype-responses';
 
 export class TextResponses {
   private HBot: TelegramBot;

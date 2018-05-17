@@ -4,7 +4,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitAny": true,
-    "outDir": "./lib",
+    "outDir": "./dist",
     "preserveConstEnums": true,
     "removeComments": true,
     "target": "es2016",
@@ -13,10 +13,10 @@
     ]
   },
   "include": [
-    "src/**/*"
+    "src/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "**/*-spec.ts"
+    "**/*-spec.ts",
   ]
 }

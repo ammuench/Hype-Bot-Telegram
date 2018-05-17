@@ -1,4 +1,4 @@
-import TelegramBot = require("node-telegram-bot-api");
+import TelegramBot = require('node-telegram-bot-api');
 
 export class TextCommands {
   private HBot: TelegramBot;
@@ -10,7 +10,7 @@ export class TextCommands {
 
   private setBasicTextCommands(): void {
     this.HBot.onText(/^\/shrug/i, (msg: any, match: any): void => {
-      this.HBot.sendMessage(msg.chat.id, "¯\\_(ツ)_/¯");
+      this.HBot.sendMessage(msg.chat.id, '¯\\_(ツ)_/¯');
     });
   }
 }
