@@ -1,17 +1,17 @@
-import TelegramBot = require('node-telegram-bot-api');
+import * as TelegramBot from 'node-telegram-bot-api';
 
 const GosuAPI = require('gosugamers-api');
 
 export class DotaMatches {
-  private MyTelegramBot: TelegramBot;
+  private HBot: TelegramBot;
 
   constructor(botReference: TelegramBot) {
-    this.MyTelegramBot = botReference;
+    this.HBot = botReference;
     this.setDotaCommandParser();
   }
 
   private setDotaCommandParser(): void {
-    this.MyTelegramBot.onText(/^\/dota/i, (msg: any, match: any): void => {
+    this.HBot.onText(/^\/dota/i, (msg: any, match: any): void => {
       const commandArray: string[] = msg.text.split(' ');
       if (commandArray.length === 1) {
         // TODO - Possibly integrate with native help commands?
@@ -34,19 +34,19 @@ export class DotaMatches {
   }
 
   private showCommandError(msg: any, command: string): void {
-    this.MyTelegramBot.sendMessage(msg.chat.id, `I'm sorry, I can't yet process the \\${command} command for /dota.`);
+    this.HBot.sendMessage(msg.chat.id, `I'm sorry, I can't yet process the \\${command} command for /dota.`);
   }
 
   private showDotaMatches(msg: any): void {
-    this.MyTelegramBot.sendMessage(msg.chat.id, 'Fetching Live Dota 2 matches...!');
+    this.HBot.sendMessage(msg.chat.id, 'Fetching Live Dota 2 matches...!');
     this.getLiveMatchData()
       .then((matchString: string) => {
-        this.MyTelegramBot.sendMessage(msg.chat.id, matchString, { parse_mode: 'HTML', disable_web_page_preview: true });
+        this.HBot.sendMessage(msg.chat.id, matchString, { parse_mode: 'HTML', disable_web_page_preview: true });
       });
   }
 
   private showDotaStreams(msg: any): void {
-    this.MyTelegramBot.sendMessage(msg.chat.id, 'Fetching Live Dota 2 streams...!');
+    this.HBot.sendMessage(msg.chat.id, 'Fetching Live Dota 2 streams...!');
     this.getDotaLiveStreams()
       .then(
         (streams: any[]) => {
@@ -57,10 +57,10 @@ export class DotaMatches {
             messageText += '    - <a href=\'' + streams[i].channel.url + '\'>Watch @' + streams[i].channel.name + '</a>\n';
           }
 
-          this.MyTelegramBot.sendMessage(msg.chat.id, messageText, { parse_mode: 'HTML', disable_web_page_preview: true });
+          this.HBot.sendMessage(msg.chat.id, messageText, { parse_mode: 'HTML', disable_web_page_preview: true });
         },
         (error: any) => {
-          this.MyTelegramBot.sendMessage(msg.chat.id, error, { parse_mode: 'HTML', disable_web_page_preview: true });
+          this.HBot.sendMessage(msg.chat.id, error, { parse_mode: 'HTML', disable_web_page_preview: true });
         },
       );
 

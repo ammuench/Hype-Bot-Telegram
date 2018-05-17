@@ -24,6 +24,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "firebase-admin": "^5.12.1",
     "gosugamers-api": "^0.1.2",
     "node-telegram-bot-api": "^0.30.0",
     "request": "^2.86.0",

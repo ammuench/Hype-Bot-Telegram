@@ -4,3 +4,4 @@ lib/
 dist/
 npm-debug.log
 .nyc_output
+firebase-credentials.json
