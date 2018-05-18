@@ -5,6 +5,7 @@ import * as TelegramBot from 'node-telegram-bot-api';
 
 // Import Modules
 import { DotaMatches } from './modules/dota-matches';
+import { TheDarkWebProfessor } from './modules/jordan';
 import { Karma } from './modules/karma';
 import { TextResponses } from './modules/text-responses';
 
@@ -20,3 +21,4 @@ const db = Firebase.firestore();
 new TextResponses(MyTelegramBot);
 new Karma(MyTelegramBot, db);
 new DotaMatches(MyTelegramBot);
+new TheDarkWebProfessor(MyTelegramBot);
