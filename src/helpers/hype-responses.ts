@@ -26,4 +26,6 @@ export const hypeResponses: string[] = [
   'HYPE HYPE',
   'HYPE',
   'hype.',
+  'ALL ABOARD THE HYPE TRAIN',
+  'ALL ABOARD THE HYPE BUS- JUST KIDDING IT\'S STILL A TRAIN',
 ];

@@ -9,6 +9,7 @@ import * as TelegramBot from 'node-telegram-bot-api';
 import { DotaMatches } from './modules/dota-matches';
 import { TheDarkWebProfessor } from './modules/jordan';
 import { Karma } from './modules/karma';
+import { MTGSearch } from './modules/mtg-search';
 import { TextResponses } from './modules/text-responses';
 
 const token = config.BOT_TOKEN;
@@ -25,3 +26,4 @@ new TextResponses(MyTelegramBot);
 new Karma(MyTelegramBot, db);
 new DotaMatches(MyTelegramBot);
 new TheDarkWebProfessor(MyTelegramBot);
+new MTGSearch(MyTelegramBot);
