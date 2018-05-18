@@ -1,5 +1,5 @@
 // Vendor Libs
-import { environment } from './environments/environment';
+const config = require('../config.json');
 
 import * as Firebase from 'firebase-admin';
 const FirebaseCredentials = require('../firebase-credentials.json');
@@ -11,7 +11,7 @@ import { TheDarkWebProfessor } from './modules/jordan';
 import { Karma } from './modules/karma';
 import { TextResponses } from './modules/text-responses';
 
-const token = environment.BOT_TOKEN;
+const token = config.BOT_TOKEN;
 
 const MyTelegramBot = new TelegramBot(token, { polling: true });
 
