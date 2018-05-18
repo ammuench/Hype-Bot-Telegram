@@ -1,4 +1,6 @@
 // Vendor Libs
+import { environment } from './environments/environment';
+
 import * as Firebase from 'firebase-admin';
 const FirebaseCredentials = require('../firebase-credentials.json');
 import * as TelegramBot from 'node-telegram-bot-api';
@@ -8,7 +10,8 @@ import { DotaMatches } from './modules/dota-matches';
 import { Karma } from './modules/karma';
 import { TextResponses } from './modules/text-responses';
 
-const token = '362547656:AAGAl4o2TvPiXEg1HN4XN5C-zf10xdeuRNk';
+const token = environment.BOT_TOKEN;
+
 const MyTelegramBot = new TelegramBot(token, { polling: true });
 
 Firebase.initializeApp({
