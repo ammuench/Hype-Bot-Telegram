@@ -20,5 +20,9 @@ export class TextResponses {
     this.HBot.onText(/^\/shrug/i, (msg: any, match: any): void => {
       this.HBot.sendMessage(msg.chat.id, '¯\\_(ツ)_/¯');
     });
+
+    this.HBot.onText(/(russia|russian|dotka|vodka)/gi, (msg, match) => {
+      this.HBot.sendMessage(msg.chat.id, 'REALLL SOVIETTTT DAAAAAMAAAAAAAAAGGGGGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE');
+    });
   }
 }
