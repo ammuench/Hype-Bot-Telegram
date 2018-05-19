@@ -39,7 +39,7 @@ export class MTGSearch {
    * @param msg - The initial message sent to the bot. It allows us to send a message back.
    * @param queryString - The custom query that was provided by the user.
    */
-  private getMTGCards(msg: any, queryString: string) {
+  private getMTGCards(msg: any, queryString: string): void {
     this.HBot.sendMessage(msg.chat.id, `<b>Fetching MTG card results for "${queryString}"</b>\n`, { parse_mode: 'HTML', disable_web_page_preview: true });
     const cardResults: Card[] = [];
     // TODO: add support for unique:prints or see whether or not it would be better to injest a set param flag.
