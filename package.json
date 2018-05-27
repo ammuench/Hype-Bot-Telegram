@@ -29,6 +29,7 @@
     "gosugamers-api": "^0.1.2",
     "node-telegram-bot-api": "^0.30.0",
     "request": "^2.86.0",
+    "scryfall-sdk": "^1.1.0",
     "tslint": "^5.9.0"
   },
   "devDependencies": {
