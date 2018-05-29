@@ -55,7 +55,7 @@ export class MTGSearch {
     // TODO: Fill out the following flags section with other appropriate flags.
     return {
       flags: {
-        random: fullQueryString.indexOf(' -r') >= 0 || fullQueryString.trim() === '-r' ,
+        random: fullQueryString.indexOf(' -r') >= 0 || fullQueryString.trim() === '-r',
       },
       queryString: fullQueryString.slice(0, indexOfFirstFlag),
     };
@@ -111,20 +111,41 @@ export class MTGSearch {
       .on('end', () => {
         if (cardResults.length === 1) {
           // If there's only one card, we send the info/image directly.
-          const card: Card = cardResults[0];
-          const priceCaption: string = card.usd ? `USD Price: $${card.usd}` : null;
-          this.HBot.sendPhoto(msg.chat.id, `${card.image_uris.normal}`, { caption: priceCaption });
+          this.sendSingleCardResult(msg, cardResults[0]);
         } else {
-          // If there are multiple cards, we provide up to the top 5 results and ask the user to refine.
-          let message: string = `Multiple cards found (${cardResults.length}). Did you mean one of the following? If not, try refining or changing your query.\n`;
-          const maxResultNumber = 5 > cardResults.length ? cardResults.length : 5;
-          for (let i = 0; i < maxResultNumber; i += 1) {
-            const card: Card = cardResults[i];
-            message += `\t\t\t* ${card.name} <i>(${card.type_line})</i>\n`;
+          const cardMatchFromName: Card = cardResults.find((card) => card.name.toLowerCase() === queryString.toLowerCase());
+          if (cardMatchFromName) {
+            this.sendSingleCardResult(msg, cardMatchFromName);
+          } else {
+            // If there are multiple cards, we provide up to the top 5 results and ask the user to refine.
+            this.sendMultipleCardResults(msg, cardResults);
           }
-          this.HBot.sendMessage(msg.chat.id, message, { parse_mode: 'HTML', disable_web_page_preview: true });
         }
       });
+  }
+
+  private sendSingleCardResult(msg: any, card: Card): void {
+    const priceCaption: string = card.usd ? `USD Price: $${card.usd}` : null;
+    this.HBot.sendPhoto(msg.chat.id, `${card.image_uris.normal}`, { caption: priceCaption });
+  }
+
+  private sendMultipleCardResults(msg: any, cards: Card[]): void {
+    const message: string = `Multiple cards found (${cards.length}). Did you mean one of the following? If not, try refining or changing your query.\n`;
+    const maxResultNumber = 5 > cards.length ? cards.length : 5;
+    const keyboardCards: TelegramBot.KeyboardButton[][] = [];
+    for (let i = 0; i < maxResultNumber; i += 1) {
+      const card: Card = cards[i];
+      keyboardCards.push([{ text: card.name + ' - ' + card.type_line }]);
+      // message += `\t\t\t* ${card.name} <i>(${card.type_line})</i>\n`;
+    }
+    this.HBot.sendMessage(msg.chat.id, message, {
+      reply_markup: {
+        keyboard: keyboardCards,
+        one_time_keyboard: true,
+        selective: true,
+      },
+      reply_to_message_id: msg.message_id,
+    });
   }
 
 }
