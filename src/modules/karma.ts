@@ -73,9 +73,7 @@ export class Karma {
       msg.entities.forEach((entity) => {
         if (entity.type === TEXT_MENTION_TYPE) {
           if (entity.user.id === senderID) {
-            const fullName = msg.from.last_name
-              ? `${msg.from.first_name} ${msg.from.last_name}`
-              : `${msg.from.first_name}`;
+            const fullName = msg.from.last_name ? `${msg.from.first_name} ${msg.from.last_name}` : `${msg.from.first_name}`;
             this.fetchUser(msg.from.id.toString(), fullName)
               .then((karma) => {
                 this.setKarma(entity.user.id.toString(), karma - 1)
@@ -155,11 +153,7 @@ export class Karma {
       const TEXT_MENTION_TYPE = 'text_mention';
       if (msg.entities[0].type === TEXT_MENTION_TYPE) {
         if (msg.entities[0].user.id !== senderID) {
-          const fullName = msg.entities[0].user.last_name
-            ? `${msg.entities[0].user.first_name} ${
-            msg.entities[0].user.last_name
-            }`
-            : `${msg.entities[0].user.first_name}`;
+          const fullName = msg.entities[0].user.last_name ? `${msg.entities[0].user.first_name} ${msg.entities[0].user.last_name}` : `${msg.entities[0].user.first_name}`;
           this.fetchUser(msg.entities[0].user.id.toString(), fullName)
             .then((karma) => {
               this.setKarma(msg.entities[0].user.id.toString(), karma - 1)
@@ -180,7 +174,7 @@ export class Karma {
         if (username !== senderUsername) {
           this.fetchUser(username, username)
             .then((karma) => {
-              this.setKarma(username, karma + 1)
+              this.setKarma(username, karma - 1)
                 .then(() => {
                   const karmaMsg = `<b>Level Down!</b> ${username} now has - 1 Karma (${karma - 1} Total)`;
                   this.HBot.sendMessage(msg.chat.id, karmaMsg, { parse_mode: 'HTML' });
