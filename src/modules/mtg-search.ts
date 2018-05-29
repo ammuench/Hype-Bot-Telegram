@@ -19,8 +19,13 @@ export class MTGSearch {
         // TODO - Possibly integrate with native help commands?
         this.showMissingQuery(msg);
       } else {
-        const queryString: string = commandArray.splice(1, commandArray.length).join(' ');
-        this.getMTGCards(msg, queryString);
+        const fullQueryString: string = commandArray.splice(1, commandArray.length).join(' ');
+        const queryObject: any = this.parseQueryString(fullQueryString);
+        if (queryObject.flags && queryObject.flags.random) {
+          this.getRandomMTGCard(msg);
+        } else {
+          this.getMTGCards(msg, queryObject.queryString, queryObject.flags);
+        }
       }
     });
   }
@@ -34,17 +39,57 @@ export class MTGSearch {
   }
 
   /**
+   * Function designed to take in the full query from a user and parse out
+   * any and all applicable flags to use to trigger other searches or refine
+   * the generic card search.
+   * @param fullQueryString - Full query string including search params and flags.
+   */
+  private parseQueryString(fullQueryString: string): any {
+    const indexOfFirstFlag: number = fullQueryString.indexOf(' -');
+    // TODO: During flag integtaion- If other flags can be executed without a query before them, find a more robust solution to add them here.
+    if (indexOfFirstFlag === -1 && fullQueryString.trim() !== '-r') {
+      return {
+        queryString: fullQueryString,
+      };
+    }
+    // TODO: Fill out the following flags section with other appropriate flags.
+    return {
+      flags: {
+        random: fullQueryString.indexOf(' -r') >= 0 || fullQueryString.trim() === '-r' ,
+      },
+      queryString: fullQueryString.slice(0, indexOfFirstFlag),
+    };
+  }
+
+  /**
+   * Helper function to send the user a random mtg card. This card will be any combination
+   * of available API parameters meaning it likely won't be in English.
+   * @param msg - The initial message sent to the bot. It allows us to send a message back.
+   */
+  private getRandomMTGCard(msg: any): void {
+    Cards.random().then(
+      (card: Card) => {
+        const priceCaption: string = card.usd ? `USD Price: $${card.usd}` : null;
+        this.HBot.sendPhoto(msg.chat.id, `${card.image_uris.normal}`, { caption: priceCaption });
+      },
+      (error: any) => {
+        // This is for any unhandled errors that we're not expecting.
+        this.HBot.sendMessage(msg.chat.id, `${error.response.body.details}`);
+      },
+    );
+  }
+
+  /**
    * Function to fetch MTG card data based on user inputs. If too many or no cards are found,
    * it will let the user know or provide steps for refining their search query.
    * @param msg - The initial message sent to the bot. It allows us to send a message back.
    * @param queryString - The custom query that was provided by the user.
+   * @param params - Optional parameter that contains flags to refine the card search.
    */
-  private getMTGCards(msg: any, queryString: string): void {
+  private getMTGCards(msg: any, queryString: string, params?: any): void {
     this.HBot.sendMessage(msg.chat.id, `<b>Fetching MTG card results for "${queryString}"</b>\n`, { parse_mode: 'HTML', disable_web_page_preview: true });
     const cardResults: Card[] = [];
-    // TODO: add support for unique:prints or see whether or not it would be better to injest a set param flag.
-    // Without the set param, the API fetches most recent printing (including online) which affects pricing/image.
-    // If we simply open this up to use unique:prints, the amount of cards is exponentially more (since almost all cards have more than one printing)
+    // TODO: Work on flushing out the params provided by the parseQueryString function. Start with sets.
     Cards.search(queryString + ' order:released')
       // Called each time the API finds a card
       .on('data', (card: Card) => {
