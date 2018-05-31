@@ -13,7 +13,8 @@ export class MTGSearch {
    * Basic setup function to enable our parser to call the search function
    */
   private setMTGCommandParser(): void {
-    this.HBot.onText(/^\/mtg/i, (msg: any, match: any): void => {
+    // Listener for messages beginning with '/mtg'
+    this.HBot.onText(/^\/mtg/i, (msg: TelegramBot.Message, match: any): void => {
       const commandArray: string[] = msg.text.split(' ');
       if (commandArray.length === 1) {
         // TODO - Possibly integrate with native help commands?
@@ -24,8 +25,34 @@ export class MTGSearch {
         if (queryObject.flags && queryObject.flags.random) {
           this.getRandomMTGCard(msg);
         } else {
-          this.getMTGCards(msg, queryObject.queryString, queryObject.flags);
+          this.searchMTGCards(msg, queryObject.queryString, queryObject.flags);
         }
+      }
+    });
+
+    // Listener for the 'callback_query' event from Telegram.
+    this.HBot.on('callback_query', (query: TelegramBot.CallbackQuery) => {
+      const mtgDataIndex: number = query.data.indexOf('mtgCard:');
+      // Make sure this 'callback_query' was from an MTG command
+      if (mtgDataIndex >= 0) {
+        const cardId: string = query.data.slice(mtgDataIndex + 8);
+        // Use this when the user selected a specific card from our list.
+        this.HBot.deleteMessage(query.message.chat.id, query.message.message_id.toString());
+        this.getMtgCardById(query.message, cardId);
+        /*
+          TODO: Work on either adding a cached version of a search result via messageID
+          and displaying more results via button interaction, or a more custom interactable
+          object in Telegram (More research required for the latter).
+        */
+
+        // Use this when the user selected to see more card options
+        // this.HBot.editMessageText('Message', {
+        //   chat_id: query.message.chat.id,
+        //   message_id: query.message.message_id,
+        //   reply_markup: {
+        //     inline_keyboard: [],
+        //   },
+        // });
       }
     });
   }
@@ -34,7 +61,7 @@ export class MTGSearch {
    * Wrapper function to tell the user that they didn't provide a search query.
    * @param msg - The initial message sent to the bot. It allows us to send a message back.
    */
-  private showMissingQuery(msg: any): void {
+  private showMissingQuery(msg: TelegramBot.Message): void {
     this.HBot.sendMessage(msg.chat.id, `Please provide something for me to search for. Try your favorite card name!`);
   }
 
@@ -46,7 +73,7 @@ export class MTGSearch {
    */
   private parseQueryString(fullQueryString: string): any {
     const indexOfFirstFlag: number = fullQueryString.indexOf(' -');
-    // TODO: During flag integtaion- If other flags can be executed without a query before them, find a more robust solution to add them here.
+    // TODO: During flag integration- If other flags can be executed without a query before them, find a more robust solution to add them here.
     if (indexOfFirstFlag === -1 && fullQueryString.trim() !== '-r') {
       return {
         queryString: fullQueryString,
@@ -66,7 +93,7 @@ export class MTGSearch {
    * of available API parameters meaning it likely won't be in English.
    * @param msg - The initial message sent to the bot. It allows us to send a message back.
    */
-  private getRandomMTGCard(msg: any): void {
+  private getRandomMTGCard(msg: TelegramBot.Message): void {
     Cards.random().then(
       (card: Card) => {
         const priceCaption: string = card.usd ? `USD Price: $${card.usd}` : null;
@@ -86,7 +113,7 @@ export class MTGSearch {
    * @param queryString - The custom query that was provided by the user.
    * @param params - Optional parameter that contains flags to refine the card search.
    */
-  private getMTGCards(msg: any, queryString: string, params?: any): void {
+  private searchMTGCards(msg: TelegramBot.Message, queryString: string, params?: any): void {
     this.HBot.sendMessage(msg.chat.id, `<b>Fetching MTG card results for "${queryString}"</b>\n`, { parse_mode: 'HTML', disable_web_page_preview: true });
     const cardResults: Card[] = [];
     // TODO: Work on flushing out the params provided by the parseQueryString function. Start with sets.
@@ -124,23 +151,56 @@ export class MTGSearch {
       });
   }
 
-  private sendSingleCardResult(msg: any, card: Card): void {
+  /**
+   * Function to search the ScryFall API using an existing cardId. If
+   * a card is found, we will send it to the user.
+   * @param msg - The initial message sent to the bot. It allows us to send a message back.
+   * @param cardId - The Id of the card we want to send to the user.
+   */
+  private getMtgCardById(msg: TelegramBot.Message, cardId: string): void {
+    Cards.byId(cardId).then(
+      (result: Card) => {
+        this.sendSingleCardResult(msg, result);
+      },
+      (error) => {
+        this.HBot.sendMessage(msg.chat.id, `${error.response.body.details}`);
+      },
+    );
+  }
+
+  /**
+   * Function to send user a single MTG card. Data is sent as a
+   * picture with the caption of the USD price, if applicable.
+   * @param msg - The initial message sent to the bot. It allows us to send a message back.
+   * @param card - The Card data fetched from ScryFall.
+   */
+  private sendSingleCardResult(msg: TelegramBot.Message, card: Card): void {
     const priceCaption: string = card.usd ? `USD Price: $${card.usd}` : null;
     this.HBot.sendPhoto(msg.chat.id, `${card.image_uris.normal}`, { caption: priceCaption });
   }
 
-  private sendMultipleCardResults(msg: any, cards: Card[]): void {
+  /**
+   * Function to let the user know their search result found more than one
+   * result when using their query. We provide a small amount of functionality
+   * to help them refine their query using inline keyboard options.
+   * TODO: Consider better/more robust ways for users to interact with the full list of cards.
+   * @param msg - The initial message sent to the bot. It allows us to send a message back.
+   * @param cards - List of MTG cards that were returned from the user's search query.
+   */
+  private sendMultipleCardResults(msg: TelegramBot.Message, cards: Card[]): void {
     const message: string = `Multiple cards found (${cards.length}). Did you mean one of the following? If not, try refining or changing your query.\n`;
     const maxResultNumber = 5 > cards.length ? cards.length : 5;
-    const keyboardCards: TelegramBot.KeyboardButton[][] = [];
+    const keyboardCards: TelegramBot.InlineKeyboardButton[][] = [];
     for (let i = 0; i < maxResultNumber; i += 1) {
       const card: Card = cards[i];
-      keyboardCards.push([{ text: card.name + ' - ' + card.type_line }]);
-      // message += `\t\t\t* ${card.name} <i>(${card.type_line})</i>\n`;
+      keyboardCards.push([{ text: card.name + ' - ' + card.type_line, callback_data: 'mtgCard:' + card.id }]);
     }
+    // TODO: See note in the 'callback_query' event listener about the 'More Results' section
+    // keyboardCards.push([{ text: 'More Results', callback_data: 'mtgCard:more|' + msg.message_id }]);
+
     this.HBot.sendMessage(msg.chat.id, message, {
       reply_markup: {
-        keyboard: keyboardCards,
+        inline_keyboard: keyboardCards,
         one_time_keyboard: true,
         selective: true,
       },
