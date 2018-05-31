@@ -3,6 +3,7 @@ import { Card, Cards } from 'scryfall-sdk';
 
 export class MTGSearch {
   private HBot: TelegramBot;
+  private cardResultsByMessageId: any = {};
 
   constructor(botReference: TelegramBot) {
     this.HBot = botReference;
@@ -32,28 +33,7 @@ export class MTGSearch {
 
     // Listener for the 'callback_query' event from Telegram.
     this.HBot.on('callback_query', (query: TelegramBot.CallbackQuery) => {
-      const mtgDataIndex: number = query.data.indexOf('mtgCard:');
-      // Make sure this 'callback_query' was from an MTG command
-      if (mtgDataIndex >= 0) {
-        const cardId: string = query.data.slice(mtgDataIndex + 8);
-        // Use this when the user selected a specific card from our list.
-        this.HBot.deleteMessage(query.message.chat.id, query.message.message_id.toString());
-        this.getMtgCardById(query.message, cardId);
-        /*
-          TODO: Work on either adding a cached version of a search result via messageID
-          and displaying more results via button interaction, or a more custom interactable
-          object in Telegram (More research required for the latter).
-        */
-
-        // Use this when the user selected to see more card options
-        // this.HBot.editMessageText('Message', {
-        //   chat_id: query.message.chat.id,
-        //   message_id: query.message.message_id,
-        //   reply_markup: {
-        //     inline_keyboard: [],
-        //   },
-        // });
-      }
+      this.respondToMTGKeyboardCallbackQuery(query);
     });
   }
 
@@ -186,26 +166,114 @@ export class MTGSearch {
    * TODO: Consider better/more robust ways for users to interact with the full list of cards.
    * @param msg - The initial message sent to the bot. It allows us to send a message back.
    * @param cards - List of MTG cards that were returned from the user's search query.
+   * @param [cardIndex] - Optional param to display cards
    */
-  private sendMultipleCardResults(msg: TelegramBot.Message, cards: Card[]): void {
+  private sendMultipleCardResults(msg: TelegramBot.Message, cards: Card[], cardIndex: number = 0, firstCall: boolean = true): void {
     const message: string = `Multiple cards found (${cards.length}). Did you mean one of the following? If not, try refining or changing your query.\n`;
-    const maxResultNumber = 5 > cards.length ? cards.length : 5;
+    const maxResultNumber = 10 > cards.length - cardIndex ? cards.length : cardIndex + 10;
     const keyboardCards: TelegramBot.InlineKeyboardButton[][] = [];
-    for (let i = 0; i < maxResultNumber; i += 1) {
-      const card: Card = cards[i];
-      keyboardCards.push([{ text: card.name + ' - ' + card.type_line, callback_data: 'mtgCard:' + card.id }]);
-    }
-    // TODO: See note in the 'callback_query' event listener about the 'More Results' section
-    // keyboardCards.push([{ text: 'More Results', callback_data: 'mtgCard:more|' + msg.message_id }]);
 
-    this.HBot.sendMessage(msg.chat.id, message, {
-      reply_markup: {
-        inline_keyboard: keyboardCards,
-        one_time_keyboard: true,
-        selective: true,
-      },
-      reply_to_message_id: msg.message_id,
-    });
+    for (let i = cardIndex; i < maxResultNumber; i += 1) {
+      const card: Card = cards[i];
+      keyboardCards.push([{ text: card.name + ' - ' + card.type_line, callback_data: 'mtgCard:' + card.id + '|' + msg.message_id }]);
+    }
+
+    // Associate the full results list to the message ID to use while interacting with our dialogues.
+    this.cardResultsByMessageId[msg.message_id] = cards;
+    // Navigation related keyboards
+    const navKeyBoards: TelegramBot.InlineKeyboardButton[] = [];
+
+    // If this is not the first part of the list (starting index is 0), display previous button
+    if (cardIndex > 0) {
+      navKeyBoards.push({ text: 'Previous Results', callback_data: 'mtgCard:prev|' + msg.message_id + '|' + (cardIndex - 10) });
+    }
+    // If there are more than 10 cards left, show the more button
+    if (cardIndex + 10 < cards.length) {
+      navKeyBoards.push({ text: 'More Results', callback_data: 'mtgCard:more|' + msg.message_id + '|' + (cardIndex + 10) });
+    }
+    // Only add the nav keyboards if they're needed
+    if (navKeyBoards.length) {
+      keyboardCards.push(navKeyBoards);
+    }
+    // Add a button that allows cancellation of process.
+    keyboardCards.push([{ text: 'Cancel', callback_data: 'mtgCard:cancel' + '|' + msg.message_id }]);
+
+    // If this is the first message, send the message. Otherwise update the existing one.
+    if (firstCall) {
+      this.HBot.sendMessage(msg.chat.id, message, {
+        reply_markup: {
+          inline_keyboard: keyboardCards,
+          one_time_keyboard: true,
+          selective: true,
+        },
+        reply_to_message_id: msg.message_id,
+      });
+    } else {
+      this.HBot.editMessageReplyMarkup(
+        {
+          inline_keyboard: keyboardCards,
+        }, {
+          chat_id: msg.chat.id,
+          message_id: msg.message_id,
+        });
+    }
+  }
+
+  /**
+   * Function to handle callback_query events from inline keyboards. It handles
+   * a few select command inputs sent from keyboards created in the process of
+   * sending users a search result that has found multiple cards with the user's
+   * query. We can handle the direct selection of a card from a list of keyboards
+   * as well as showing the next results, previous results, and cancelling the
+   * interaction completely.
+   * @param query - CallBackQuery object associated with the event.
+   */
+  private respondToMTGKeyboardCallbackQuery(query: TelegramBot.CallbackQuery): void {
+    const mtgDataIndex: number = query.data.indexOf('mtgCard:');
+    const msg: TelegramBot.Message = query.message;
+    // Make sure this 'callback_query' was from an MTG command
+    if (mtgDataIndex >= 0) {
+      /*
+        This callback data is split in a certain order/amount depending on the first
+        string after the mtgCard: prefix. The second string will always be our MessageId,
+        but the first will either be a command (more/prev/cancel) or the ID of the selected
+        Magic Card. If 'more' or 'prev' is the command, there will also be a third input of the
+        desired index of cards to start at in the displayed search results.
+      */
+      const callbackData: string[] = query.data.slice(mtgDataIndex + 8).split('|');
+      if (callbackData[0] === 'more') {
+        const messageId: string = callbackData[1];
+        const currentIndex: number = parseInt(callbackData[2], 10);
+
+        this.sendMultipleCardResults(msg, this.cardResultsByMessageId[messageId], currentIndex, false);
+      } else if (callbackData[0] === 'prev') {
+        const messageId: string = callbackData[1];
+        const currentIndex: number = parseInt(callbackData[2], 10);
+
+        this.sendMultipleCardResults(msg, this.cardResultsByMessageId[messageId], currentIndex, false);
+      } else if (callbackData[0] === 'cancel') {
+        const messageId: string = callbackData[1];
+
+        this.HBot.deleteMessage(msg.chat.id, msg.message_id.toString());
+        delete this.cardResultsByMessageId[messageId];
+      } else {
+        this.HBot.deleteMessage(msg.chat.id, msg.message_id.toString());
+
+        const cardId: string = callbackData[0];
+        const messageId: string = callbackData[1];
+        const cards: Card[] = this.cardResultsByMessageId[messageId];
+        const targetCard: Card = cards.find((card: Card) => card.id === cardId);
+
+        // In the unlikely event we can't find the target card in our search results- fetch it by ID from the API.
+        if (targetCard) {
+          this.sendSingleCardResult(msg, targetCard);
+        } else {
+          this.getMtgCardById(msg, cardId);
+        }
+
+        delete this.cardResultsByMessageId[messageId];
+      }
+    }
   }
 
 }
