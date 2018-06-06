@@ -31,7 +31,7 @@ export class MTGSearch {
       }
     });
 
-    // Listener for the 'text' event from Telegram.
+    // Listener for the 'text' event from Telegram. Used to listen for possible user selections of keyboard options.
     this.HBot.on('text', (msg: TelegramBot.Message) => {
       if (this.cardResultsByUserId[msg.from.id]) {
         this.respondToMTGKeyboardReply(msg);
@@ -158,53 +158,59 @@ export class MTGSearch {
    */
   private sendSingleCardResult(msg: TelegramBot.Message, card: Card): void {
     const priceCaption: string = card.usd ? `USD Price: $${card.usd}` : null;
-    this.HBot.sendPhoto(msg.chat.id, `${card.image_uris.normal}`, { caption: priceCaption });
+    if (card.card_faces) {
+      // Multi faced card case
+      card.card_faces.forEach((cardFace: any, index: number) => {
+        this.HBot.sendPhoto(msg.chat.id, `${cardFace.image_uris.normal}`,
+        {
+          caption: index === card.card_faces.length - 1 ? priceCaption : undefined,
+          reply_markup: {
+            remove_keyboard: true,
+            selective: true,
+          },
+          reply_to_message_id: msg.message_id,
+        });
+      });
+    } else {
+      this.HBot.sendPhoto(msg.chat.id, `${card.image_uris.normal}`,
+        {
+          caption: priceCaption,
+          reply_markup: {
+            remove_keyboard: true,
+            selective: true,
+          },
+          reply_to_message_id: msg.message_id,
+        });
+    }
   }
 
   /**
    * Function to let the user know their search result found more than one
-   * result when using their query. We provide a small amount of functionality
-   * to help them refine their query using inline keyboard options.
-   * TODO: Consider better/more robust ways for users to interact with the full list of cards.
+   * result when using their query. We can display up to 120 results to the
+   * user for them to select from along with a message asking for a refined
+   * query.
    * @param msg - The initial message sent to the bot. It allows us to send a message back.
    * @param userCards - List of MTG cards that were returned from the user's search query.
-   * @param [cardIndex] - Optional param to display cards
    */
-  private sendMultipleCardResults(msg: TelegramBot.Message, userCards: Card[], cardIndex: number = 0): void {
-    const message: string = `Multiple cards found (${userCards.length}). Did you mean one of the following? If not, try refining or changing your query.\n`;
-    const maxResultNumber = 10 > userCards.length - cardIndex ? userCards.length : cardIndex + 10;
+  private sendMultipleCardResults(msg: TelegramBot.Message, userCards: Card[]): void {
+    let message: string = `Multiple cards found (${userCards.length}). Did you mean one of the following? If not, try refining or changing your query.\n`;
+    if (userCards.length > 120) {
+      message += `Results limited to 120\n`;
+    }
     const keyboardCards: TelegramBot.InlineKeyboardButton[][] = [];
 
-    for (let i = cardIndex; i < maxResultNumber; i += 1) {
-      const card: Card = userCards[i];
-      keyboardCards.push([{ text: card.name + ' - ' + card.type_line }]);
-    }
+    userCards.forEach((card: Card, index: number) => {
+      if (index < 120) {
+        if (card.card_faces) {
+          keyboardCards.push([{ text: card.name + ' - ' + card.card_faces[0].type_line }]);
+        } else {
+          keyboardCards.push([{ text: card.name + ' - ' + card.type_line }]);
+        }
+      }
+    });
 
     // Associate the full results list to the message ID to use while interacting with our dialogues.
-    this.cardResultsByUserId[msg.from.id] = {
-      cards: userCards,
-      currentIndex: cardIndex,
-    };
-    // Navigation related keyboards
-    const navKeyBoards: TelegramBot.KeyboardButton[] = [];
-
-    // If this is not the first part of the list (starting index is 0), display previous button
-    // TODO: Re enable when I get more time to test
-    // if (cardIndex > 0) {
-    //   navKeyBoards.push({ text: 'Previous Results' });
-    // }
-    // If there are more than 10 cards left, show the more button
-    // TODO: Re enable when I get more time to test
-    // if (cardIndex + 10 < userCards.length) {
-    //   navKeyBoards.push({ text: 'More Results' });
-    // }
-    // Only add the nav keyboards if they're needed
-    if (navKeyBoards.length) {
-      keyboardCards.push(navKeyBoards);
-    }
-    // Add a button that allows cancellation of process.
-    // TODO: Re enable when I get more time to test
-    // keyboardCards.push([{ text: 'Cancel' }]);
+    this.cardResultsByUserId[msg.from.id] = userCards;
 
     this.HBot.sendMessage(msg.chat.id, message, {
       reply_markup: {
@@ -225,37 +231,23 @@ export class MTGSearch {
    * @param msg - The message replying to/from the keyboard initially sent
    */
   private respondToMTGKeyboardReply(msg: TelegramBot.Message): void {
-    /*
-        This callback data is split in a certain order/amount depending on the first
-        string after the mtgCard: prefix. The second string will always be our MessageId,
-        but the first will either be a command (more/prev/cancel) or the ID of the selected
-        Magic Card. If 'more' or 'prev' is the command, there will also be a third input of the
-        desired index of cards to start at in the displayed search results.
-      */
     const messageText: string = msg.text;
     const userId: number = msg.from.id;
-    // TODO - Update more/prev functionality once it's re-enabled
-    if (messageText === 'More Results') {
-      //  TODO - Add make sure sending keyboard updates from this works as expected once re-enabled.
-      this.sendMultipleCardResults(msg, this.cardResultsByUserId[userId].cards, this.cardResultsByUserId[userId].index + 10);
-    } else if (messageText === 'Previous Results') {
-      //  TODO - Add make sure sending keyboard updates from this works as expected once re-enabled.
-      this.sendMultipleCardResults(msg, this.cardResultsByUserId[userId].cards, this.cardResultsByUserId[userId].index - 10);
-    } else if (messageText === 'Cancel') {
-
-      delete this.cardResultsByUserId[userId];
-    } else {
-
-      const cards: Card[] = this.cardResultsByUserId[userId].cards;
-      const targetCard: Card = cards.find((card: Card) => card.name + ' - ' + card.type_line === messageText);
-
-      if (targetCard) {
-        this.sendSingleCardResult(msg, targetCard);
+    const cards: Card[] = this.cardResultsByUserId[userId];
+    const targetCard: Card = cards.find((card: Card) => {
+      if (card.card_faces) {
+        // Multi faced card case
+        return messageText === card.name + ' - ' + card.card_faces[0].type_line;
+      } else {
+        return messageText === card.name + ' - ' + card.type_line;
       }
-      // TODO - consider failure case?
+    });
 
-      delete this.cardResultsByUserId[userId];
+    if (targetCard) {
+      this.sendSingleCardResult(msg, targetCard);
     }
+    // TODO - consider failure case?
+    delete this.cardResultsByUserId[userId];
   }
 
 }
