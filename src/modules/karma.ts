@@ -1,4 +1,3 @@
-import * as Firebase from 'firebase-admin';
 import * as TelegramBot from 'node-telegram-bot-api';
 
 export class Karma {
@@ -60,6 +59,11 @@ export class Karma {
     this.HBot.onText(/(\-\-|—)/, (msg, match) => {
       if (!msg.text.match(/\+\+/)) {
         this.karmaDown(msg);
+      }
+    });
+    this.HBot.onText(/^\/karmalist/, (msg, match) => {
+      if (match) {
+        this.karmaList(msg);
       }
     });
   }
@@ -188,6 +192,42 @@ export class Karma {
             });
         }
       }
+    }
+  }
+
+  private async karmaList(msg: TelegramBot.Message): Promise<void> {
+    try {
+      const kList = await this.karmaDB.get();
+      const karmaArray: any[] = [];
+      kList.forEach((karma) => {
+        karmaArray.push(karma.data());
+      });
+      // Sort Karmalist Descending by Karma Value
+      karmaArray.sort((a, b) => {
+        if (a.karma > b.karma) { return -1; }
+        if (b.karma > a.karma) { return 1; }
+        return 0;
+      });
+      const listTextTop10Array: string[] = [];
+      for (let i = 0, len = 10; i < len; i++) {
+        listTextTop10Array.push(`${i + 1}. ${karmaArray[i].name}: <b>${karmaArray[i].karma}</b> Karma Points`);
+      }
+      const listTextTop10 = `<i>Karma Top 10</i>\n\n${listTextTop10Array.join('\n')}`;
+      // Sort Karmalist Ascending by Karma Value
+      karmaArray.sort((a, b) => {
+        if (a.karma > b.karma) { return 1; }
+        if (b.karma > a.karma) { return -1; }
+        return 0;
+      });
+      const listTextBot10Array: string[] = [];
+      for (let i = 0, len = 10; i < len; i++) {
+        listTextBot10Array.push(`${i + 1}. ${karmaArray[i].name}: <b>${karmaArray[i].karma}</b> Karma Points`);
+      }
+      const listTextBot10 = `<i>Karma Bottom 10</i>\n\n${listTextBot10Array.join('\n')}`;
+      this.HBot.sendMessage(msg.chat.id, listTextTop10, { parse_mode: 'HTML' });
+      this.HBot.sendMessage(msg.chat.id, listTextBot10, { parse_mode: 'HTML' });
+    } catch (e) {
+      console.log('error fetching karma list');
     }
   }
 }
