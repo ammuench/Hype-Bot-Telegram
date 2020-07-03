@@ -62,6 +62,11 @@ export class Karma {
         this.karmaDown(msg);
       }
     });
+    this.HBot.onText(/(eva)/gi, (msg, match) => {
+      if(!msg.text.match(/\+\+/) && !msg.text.match(/(\-\-|—)/)){
+        this.getInTheSuit(msg);
+      }
+    })
   }
 
   private karmaUp(msg: TelegramBot.Message): void {
@@ -188,6 +193,45 @@ export class Karma {
             });
         }
       }
+    }
+  }
+
+  private getInTheSuit(msg: TelegramBot.Message): void {
+    if(msg.entities){
+      const senderID = msg.from.id;
+      const senderUsername = `@${msg.from.username}`;
+      const MENTION_TYPE = 'mention';
+      const TEXT_MENTION_TYPE = 'text_mention';
+      if(senderUsername){
+        msg.entities.forEach((entity) => {
+          if(entity.type === TEXT_MENTION_TYPE){
+            if(entity.user.id === senderID){
+              const fullName = msg.from.last_name ? `${msg.from.first_name} ${msg.from.last_name}` : `${msg.from.first_name}`;
+              const cheatMsg = 'You can\'t force yourself to get in the suit';
+              this.HBot.sendMessage(msg.chat.id, cheatMsg);
+            }
+            else{
+              const fullName = entity.user.last_name
+                ? `${entity.user.first_name} ${entity.user.last_name}`
+                : `${entity.user.first_name}`;
+                const suitMessage = `${fullName} get in the suit`;
+                this.HBot.sendMessage(msg.chat.id, suitMessage);
+            }
+          }
+          else if(entity.type === MENTION_TYPE){
+            const username = msg.text.substr(entity.offset, entity.length);
+            if(username === senderUsername){
+              const cheatMsg = 'You can\'t force yourself to get in the suit';
+              this.HBot.sendMessage(msg.chat.id, cheatMsg);
+            }
+            else{
+                  const suitMessage = `${username} get in the suit`;
+                  this.HBot.sendMessage(msg.chat.id, suitMessage);
+            }
+          }
+        });
+      }
+      
     }
   }
 }

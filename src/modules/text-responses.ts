@@ -24,5 +24,13 @@ export class TextResponses {
     this.HBot.onText(/(russia|russian|dotka|vodka)/gi, (msg, match) => {
       this.HBot.sendMessage(msg.chat.id, 'REALLL SOVIETTTT DAAAAAMAAAAAAAAAGGGGGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE');
     });
+
+    this.HBot.onText(/(stalin)|(trotsky)|(lenin)/gi, (msg, match) => {
+      this.HBot.sendMessage(msg.chat.id, "The USSR wasn't that bad okayyyy")
+    });
+
+    this.HBot.onText(/(uwu)|(owo)/, (msg, match) => {
+      this.HBot.sendMessage(msg.chat.id, '( ᵘ ꒳ ᵘ ✼)');
+    });
   }
 }
